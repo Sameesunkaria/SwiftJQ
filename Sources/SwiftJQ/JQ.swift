@@ -1,4 +1,5 @@
 import Cjq
+import Foundation
 
 /// An object that let's you run a jq program over an input.
 ///
@@ -61,7 +62,12 @@ final public class JQ {
     /// - parameters:
     ///   - program: A jq program used to process all inputs to the instance
     ///   of this class.
-    public init(program: String) throws {
+    ///   - libraryPaths: Array of file system URLs the jq program uses to
+    ///   search for libraries.
+    public init(
+        program: String,
+        libraryPaths: [URL] = []
+    ) throws {
         self.program = program
         // Initializing a new jq state.
         jqState = jq_init()
@@ -80,9 +86,14 @@ final public class JQ {
             errorHandler.callback,
             errorHandler.rawPointer)
 
-        // Setting library search paths. Not doing so raises an assertion
-        // if an include statement is present in the program.
-        jq_set_attr(jqState, jv_string("JQ_LIBRARY_PATH"), jv_array())
+        // Setting library search paths. An empty array of paths must be
+        // set if no libraryPaths are passed in, not doing so causes the
+        // program to raise an assertion.
+        let jvLibraryPaths = libraryPaths
+            .map(\.standardizedFileURL.relativePath)
+            .map { jv_string($0) }
+            .reduce(jv_array(), jv_array_append)
+        jq_set_attr(jqState, jv_string("JQ_LIBRARY_PATH"), jvLibraryPaths)
 
         // Compile the jq program.
         let compiled = jq_compile(jqState, program)

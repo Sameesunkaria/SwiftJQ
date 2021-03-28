@@ -22,7 +22,8 @@ let package = Package(
             dependencies: ["Cjq", "Coniguruma"]),
         .testTarget(
             name: "SwiftJQTests",
-            dependencies: ["SwiftJQ"]),
+            dependencies: ["SwiftJQ"],
+            resources: [.process("Resources")]),
         .binaryTarget(
             name: "Cjq",
             url: "https://github.com/Sameesunkaria/JQ-Darwin/releases/download/1.0.0/Cjq.xcframework.zip",

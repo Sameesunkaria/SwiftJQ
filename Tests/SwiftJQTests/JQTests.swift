@@ -2,6 +2,8 @@ import XCTest
 import SwiftJQ
 
 final class JQTests: XCTestCase {
+    let resourcesURL = Bundle.module.resourceURL!
+
     func testInitSucceedsForValidProgram() throws {
         XCTAssertEqual(try JQ(program: "").program, "")
         XCTAssertEqual(try JQ(program: ".").program, ".")
@@ -9,6 +11,12 @@ final class JQTests: XCTestCase {
         XCTAssertEqual(try JQ(program: "debug").program, "debug")
         XCTAssertEqual(try JQ(program: "input").program, "input")
         XCTAssertEqual(try JQ(program: "inputs").program, "inputs")
+        XCTAssertEqual(try JQ(program: "inputs").program, "inputs")
+        XCTAssertEqual(
+            try JQ(
+                program: #"include "test_lib"; test_func"#,
+                libraryPaths: [resourcesURL]).program,
+            #"include "test_lib"; test_func"#)
     }
 
     func testInitFailsForInvalidProgram() throws {
@@ -19,9 +27,9 @@ final class JQTests: XCTestCase {
                 "jq: 1 compile error"
             ])
         assertCompileError(
-            try JQ(program: #"include "some_lib.jq"; ."#),
+            try JQ(program: #"include "some_lib"; ."#),
             errorMessages: [
-                "jq: error: module not found: some_lib.jq\n",
+                "jq: error: module not found: some_lib\n",
                 "jq: 1 compile error"
             ])
     }
