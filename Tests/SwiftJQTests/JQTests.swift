@@ -110,6 +110,89 @@ final class JQTests: XCTestCase {
                 .process("[1, 2, 3, 4, 5]"),
             ["1", "2"])
     }
+
+    func testOutputConfigurations() throws {
+        XCTAssertEqual(
+            try JQ(program: ".").process(#"{"c":10,"b":5,"a":7}"#),
+            [#"{"c":10,"b":5,"a":7}"#])
+
+        XCTAssertEqual(
+            try JQ(program: ".").process(#""test""#),
+            [#""test""#])
+
+        XCTAssertEqual(
+            try JQ(program: ".").process(
+                #"{"c":10,"b":5,"a":7}"#,
+                outputConfiguration: .init(sortedKeys: true)),
+            [#"{"a":7,"b":5,"c":10}"#])
+
+        XCTAssertEqual(
+            try JQ(program: ".").process(
+                #""test""#,
+                outputConfiguration: .init(rawString: true)),
+            ["test"])
+
+        XCTAssertEqual(
+            try JQ(program: ".").process(
+                #"{"c":10,"b":5,"a":7}"#,
+                outputConfiguration: .init(pretty: true)),
+            [
+                """
+                {
+                    "c": 10,
+                    "b": 5,
+                    "a": 7
+                }
+                """
+            ])
+
+        XCTAssertEqual(
+            try JQ(program: ".").process(
+                #"{"c":10,"b":5,"a":7}"#,
+                outputConfiguration: .init(pretty: true, indent: .spaces(2))),
+            [
+                """
+                {
+                  "c": 10,
+                  "b": 5,
+                  "a": 7
+                }
+                """
+            ])
+
+        XCTAssertEqual(
+            try JQ(program: ".").process(
+                #"{"c":10,"b":5,"a":7}"#,
+                outputConfiguration: .init(pretty: true, indent: .tabs)),
+            [
+                """
+                {
+                \t"c": 10,
+                \t"b": 5,
+                \t"a": 7
+                }
+                """
+            ])
+
+        XCTAssertEqual(
+            try JQ(program: ".[]").process(
+                #"[{"c":10,"b":5,"a":7}, "test"]"#,
+                outputConfiguration: .init(
+                    sortedKeys: true,
+                    rawString: true,
+                    pretty: true,
+                    indent: .spaces(2))),
+            [
+                """
+                {
+                  "a": 7,
+                  "b": 5,
+                  "c": 10
+                }
+                """,
+                "test"
+            ])
+    }
 }
 
 extension JQTests {

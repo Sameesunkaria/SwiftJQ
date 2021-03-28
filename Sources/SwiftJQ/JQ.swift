@@ -200,12 +200,14 @@ extension JQ {
         outputConfiguration: OutputConfiguration
     ) -> String {
         if outputConfiguration.rawString, jv_get_kind(value) == JV_KIND_STRING {
-            defer { jv_free(value) }
-            return String(cString: jv_string_value(value))
+            let outputString = String(cString: jv_string_value(value))
+            jv_free(value)
+            return outputString
         } else {
             let stringResult = jv_dump_string(value, outputConfiguration.jvPrintFlags)
+            let outputString = String(cString: jv_string_value(stringResult))
             jv_free(stringResult)
-            return String(cString: jv_string_value(stringResult))
+            return outputString
         }
     }
 
@@ -273,4 +275,7 @@ extension JQ {
             return errorMessage(from: value)
         }
     }
+}
+func dump(jv: jv) {
+    print("DUMPED:", String(cString: jv_string_value(jv_dump_string(jv_copy(jv), 0))))
 }
