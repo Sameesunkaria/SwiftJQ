@@ -276,6 +276,3 @@ extension JQ {
         }
     }
 }
-func dump(jv: jv) {
-    print("DUMPED:", String(cString: jv_string_value(jv_dump_string(jv_copy(jv), 0))))
-}
