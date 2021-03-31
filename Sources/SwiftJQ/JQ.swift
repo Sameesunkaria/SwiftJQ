@@ -33,9 +33,9 @@ import Foundation
 /// ]
 /// """
 ///
-/// let expensiveFruits = try expensiveFruitsFilter.process(
-///     fruitsJSON,
-///     outputConfiguration: .init(rawString: true))
+/// let expensiveFruits = try expensiveFruitsFilter.all(
+///     for: fruitsJSON,
+///     format: StringFormat(config: .init(rawString: true)))
 ///
 /// print(expensiveFruits) // Prints ["apple", "avocado"]
 /// ```
@@ -121,16 +121,15 @@ final public class JQ {
         jq_teardown(&jqState)
     }
 
-    /// Process JSON input using the jq `program` stored within `self`.
+    /// Returns the first value emitted while processing the JSON input, formatted
+    /// into the specified output format. Returns `nil` if no value is emitted.
     ///
-    /// The `inputJSON` must be a string containing a valid JSON.
-    /// Processing an input may yield zero, one or many results. The returned
-    /// array accumulates all the results emitted by the jq for the provided
-    /// `inputJSON`. If the input is not a valid JSON or the jq programs does
-    /// not finish successfully a `JQ.ProcessingError` will be thrown.
-    ///
-    /// Optionally, a `JQ.OutputConfiguration` may be provided. The output
-    /// configuration defines how the final output should be formatted.
+    /// The input `json` must be a valid JSON. Processing an input may yield
+    /// zero, one or many results. Only the first result is processed, transformed into
+    /// the specified format and returned. If the input is not a valid JSON or the jq
+    /// programs does not finish successfully a `JQ.ProcessingError` will be
+    /// thrown. If transformation into the output format fails, the transformation error
+    /// is rethrown.
     ///
     /// - NOTE: A `JQ` instance can only process one input at a time.
     /// Attempting to processing multiple inputs in parallel may lead to the caller
@@ -139,16 +138,294 @@ final public class JQ {
     /// `JQ` object for each thread.
     ///
     /// - parameters:
-    ///   - inputJSON: A string containing JSON which will be processed
-    ///   using the jq `program` stored within `self`.
-    ///   - outputConfiguration: Configuration options for formatting
-    ///   the output of the jq program.
-    public func process(
-        _ inputJSON: String,
+    ///   - json: A string containing JSON to be processed using the jq
+    ///   `program` stored within `self`.
+    ///   - format: An output format to which the results are transformed.
+    public func first<T: OutputFormat>(for json: String, format: T) throws -> T.Format? {
+        do {
+            return try one(for: json, format: format)
+        } catch ProcessingError.noResultEmitted {
+            return nil
+        }
+    }
+
+    /// Returns the first value emitted while processing the JSON input, formatted
+    /// into the specified output format. Throws if no value is emitted.
+    ///
+    /// The input `json` must be a valid JSON. Processing an input may yield
+    /// zero, one or many results. Only the first result is processed, transformed into
+    /// the specified format and returned. If the input is not a valid JSON or the
+    /// program does not emit any value for the given input or the jq programs does
+    /// not finish successfully a `JQ.ProcessingError` will be thrown. If
+    /// transformation into the output format fails, the transformation error is rethrown.
+    ///
+    /// - NOTE: A `JQ` instance can only process one input at a time.
+    /// Attempting to processing multiple inputs in parallel may lead to the caller
+    /// having to wait while another input finishes processing. If you need to
+    /// process multiple inputs in parallel, please create a new instance of the
+    /// `JQ` object for each thread.
+    ///
+    /// - parameters:
+    ///   - json: A string containing JSON to be processed using the jq
+    ///   `program` stored within `self`.
+    ///   - format: An output format to which the results are transformed.
+    public func one<T: OutputFormat>(for json: String, format: T) throws -> T.Format {
+        let stringResult = try processOne(for: json, outputConfiguration: format.config)
+        return try format.transform(string: stringResult)
+    }
+
+    /// Returns all values emitted while processing the JSON input, formatted
+    /// into the specified output format.
+    ///
+    /// The input `json` must be a valid JSON. Processing an input may yield
+    /// zero, one or many results. The results are accumulated into an array,
+    /// transformed into the specified format and returned. If the input is not a valid
+    /// JSON or the jq programs does not finish successfully a
+    /// `JQ.ProcessingError` will be thrown. If transformation into the output
+    /// format fails, the transformation error is rethrown.
+    ///
+    /// - NOTE: A `JQ` instance can only process one input at a time.
+    /// Attempting to processing multiple inputs in parallel may lead to the caller
+    /// having to wait while another input finishes processing. If you need to
+    /// process multiple inputs in parallel, please create a new instance of the
+    /// `JQ` object for each thread.
+    ///
+    /// - parameters:
+    ///   - json: A string containing JSON to be processed using the jq
+    ///   `program` stored within `self`.
+    ///   - format: An output format to which the results are transformed.
+    public func all<T: OutputFormat>(for json: String, format: T) throws -> [T.Format] {
+        let stringResults = try processAll(for: json, outputConfiguration: format.config)
+        return try stringResults.map(format.transform)
+    }
+
+    /// Returns the first value emitted while processing the JSON input, formatted
+    /// into the specified output format. Returns `nil` if no value is emitted.
+    ///
+    /// The input `jsonData` must hold a valid JSON encoded as UTF-8.
+    /// Processing an input may yield zero, one or many results. Only the first result
+    /// is processed, transformed into the specified format and returned. If the input
+    /// is not a valid JSON or the jq programs does not finish successfully a
+    /// `JQ.ProcessingError` will be thrown. If transformation into the output
+    /// format fails, the transformation error is rethrown.
+    ///
+    /// - NOTE: A `JQ` instance can only process one input at a time.
+    /// Attempting to processing multiple inputs in parallel may lead to the caller
+    /// having to wait while another input finishes processing. If you need to
+    /// process multiple inputs in parallel, please create a new instance of the
+    /// `JQ` object for each thread.
+    ///
+    /// - parameters:
+    ///   - jsonData: Data containing JSON encoded as UTF-8 to be
+    ///   processed using the jq `program` stored within `self`.
+    ///   - format: An output format to which the results are transformed.
+    public func first<T: OutputFormat>(for jsonData: Data, format: T) throws -> T.Format? {
+        try first(for: String(decoding: jsonData, as: UTF8.self), format: format)
+    }
+
+    /// Returns the first value emitted while processing the JSON input, formatted
+    /// into the specified output format. Throws if no value is emitted.
+    ///
+    /// The input `jsonData` must hold a valid JSON encoded as UTF-8.
+    /// Processing an input may yield zero, one or many results. Only the first result
+    /// is processed, transformed into the specified format and returned. If the input
+    /// is not a valid JSON or the program does not emit any value for the given
+    /// input or the jq programs does not finish successfully a
+    /// `JQ.ProcessingError` will be thrown. If transformation into the output
+    /// format fails, the transformation error is rethrown.
+    ///
+    /// - NOTE: A `JQ` instance can only process one input at a time.
+    /// Attempting to processing multiple inputs in parallel may lead to the caller
+    /// having to wait while another input finishes processing. If you need to
+    /// process multiple inputs in parallel, please create a new instance of the
+    /// `JQ` object for each thread.
+    ///
+    /// - parameters:
+    ///   - jsonData: Data containing JSON encoded as UTF-8 to be
+    ///   processed using the jq `program` stored within `self`.
+    ///   - format: An output format to which the results are transformed.
+    public func one<T: OutputFormat>(for jsonData: Data, format: T) throws -> T.Format {
+        try one(for: String(decoding: jsonData, as: UTF8.self), format: format)
+    }
+
+    /// Returns all values emitted while processing the JSON input, formatted
+    /// into the specified output format.
+    ///
+    /// The input `jsonData` must hold a valid JSON encoded as UTF-8.
+    /// Processing an input may yield zero, one or many results. The results are
+    /// accumulated into an array, transformed into the specified format and
+    /// returned. If the input is not a valid JSON or the jq programs does not
+    /// finish successfully a `JQ.ProcessingError` will be thrown. If
+    /// transformation into the output format fails, the transformation error
+    /// is rethrown.
+    ///
+    /// - NOTE: A `JQ` instance can only process one input at a time.
+    /// Attempting to processing multiple inputs in parallel may lead to the caller
+    /// having to wait while another input finishes processing. If you need to
+    /// process multiple inputs in parallel, please create a new instance of the
+    /// `JQ` object for each thread.
+    ///
+    /// - parameters:
+    ///   - jsonData: Data containing JSON encoded as UTF-8 to be
+    ///   processed using the jq `program` stored within `self`.
+    ///   - format: An output format to which the results are transformed.
+    public func all<T: OutputFormat>(for jsonData: Data, format: T) throws -> [T.Format] {
+        try all(for: String(decoding: jsonData, as: UTF8.self), format: format)
+    }
+
+    /// Returns the first value emitted while processing the JSON input, as
+    /// a `String`. Returns `nil` if no value is emitted.
+    ///
+    /// The input `json` must be a valid JSON. Processing an input may yield
+    /// zero, one or many results. Only the first result is processed and returned.
+    /// If the input is not a valid JSON or the jq programs does not finish
+    /// successfully a `JQ.ProcessingError` will be thrown.
+    ///
+    /// - NOTE: A `JQ` instance can only process one input at a time.
+    /// Attempting to processing multiple inputs in parallel may lead to the caller
+    /// having to wait while another input finishes processing. If you need to
+    /// process multiple inputs in parallel, please create a new instance of the
+    /// `JQ` object for each thread.
+    ///
+    /// - parameters:
+    ///   - json: A string containing JSON to be processed using the jq
+    ///   `program` stored within `self`.
+    @inlinable
+    public func first(for json: String) throws -> String? {
+        try first(for: json, format: StringFormat())
+    }
+
+    /// Returns the first value emitted while processing the JSON input, as
+    /// a `String`. Throws if no value is emitted.
+    ///
+    /// The input `json` must be a valid JSON. Processing an input may yield
+    /// zero, one or many results. Only the first result is processed and returned.
+    /// If the input is not a valid JSON or the program does not emit any value
+    /// for the given input or the jq programs does not finish successfully
+    /// a `JQ.ProcessingError` will be thrown.
+    ///
+    /// - NOTE: A `JQ` instance can only process one input at a time.
+    /// Attempting to processing multiple inputs in parallel may lead to the caller
+    /// having to wait while another input finishes processing. If you need to
+    /// process multiple inputs in parallel, please create a new instance of the
+    /// `JQ` object for each thread.
+    ///
+    /// - parameters:
+    ///   - json: A string containing JSON to be processed using the jq
+    ///   `program` stored within `self`.
+    @inlinable
+    public func one(for json: String) throws -> String {
+        try one(for: json, format: StringFormat())
+    }
+
+    /// Returns all values emitted while processing the JSON input, as an
+    /// array of `String`.
+    ///
+    /// The input `json` must be a valid JSON. Processing an input may yield
+    /// zero, one or many results. The results are accumulated into an array
+    /// and returned. If the input is not a valid JSON or the jq programs does
+    /// not finish successfully a `JQ.ProcessingError` will be thrown.
+    ///
+    /// - NOTE: A `JQ` instance can only process one input at a time.
+    /// Attempting to processing multiple inputs in parallel may lead to the caller
+    /// having to wait while another input finishes processing. If you need to
+    /// process multiple inputs in parallel, please create a new instance of the
+    /// `JQ` object for each thread.
+    ///
+    /// - parameters:
+    ///   - json: A string containing JSON to be processed using the jq
+    ///   `program` stored within `self`.
+    @inlinable
+    public func all(for json: String) throws -> [String] {
+        try all(for: json, format: StringFormat())
+    }
+
+    /// Returns the first value emitted while processing the JSON input,
+    /// as `Data`. Returns `nil` if no value is emitted.
+    ///
+    /// The input `jsonData` must hold a valid JSON encoded as UTF-8.
+    /// Processing an input may yield zero, one or many results. Only the first result
+    /// is processed and returned. If the input is not a valid JSON or the jq programs
+    /// does not finish successfully a `JQ.ProcessingError` will be thrown.
+    ///
+    /// - NOTE: A `JQ` instance can only process one input at a time.
+    /// Attempting to processing multiple inputs in parallel may lead to the caller
+    /// having to wait while another input finishes processing. If you need to
+    /// process multiple inputs in parallel, please create a new instance of the
+    /// `JQ` object for each thread.
+    ///
+    /// - parameters:
+    ///   - jsonData: Data containing JSON encoded as UTF-8 to be
+    ///   processed using the jq `program` stored within `self`.
+    @inlinable
+    public func first(for jsonData: Data) throws -> Data? {
+        try first(for: jsonData, format: DataFormat())
+    }
+
+    /// Returns the first value emitted while processing the JSON input,
+    /// as `Data`. Throws if no value is emitted.
+    ///
+    /// The input `jsonData` must hold a valid JSON encoded as UTF-8.
+    /// Processing an input may yield zero, one or many results. Only the first result
+    /// is processed and returned. If the input is not a valid JSON or the program does
+    /// not emit any value for the given input or the jq programs does not finish
+    /// successfully a `JQ.ProcessingError` will be thrown. If transformation into
+    /// the output format fails, the transformation error is rethrown.
+    ///
+    /// - NOTE: A `JQ` instance can only process one input at a time.
+    /// Attempting to processing multiple inputs in parallel may lead to the caller
+    /// having to wait while another input finishes processing. If you need to
+    /// process multiple inputs in parallel, please create a new instance of the
+    /// `JQ` object for each thread.
+    ///
+    /// - parameters:
+    ///   - jsonData: Data containing JSON encoded as UTF-8 to be
+    ///   processed using the jq `program` stored within `self`.
+    @inlinable
+    public func one(for jsonData: Data) throws -> Data {
+        try one(for: jsonData, format: DataFormat())
+    }
+
+    /// Returns all values emitted while processing the JSON input, as an
+    /// array of `Data`.
+    ///
+    /// The input `jsonData` must hold a valid JSON encoded as UTF-8.
+    /// Processing an input may yield zero, one or many results. The results are
+    /// accumulated into an array and returned. If the input is not a valid JSON
+    /// or the jq programs does not finish successfully a `JQ.ProcessingError`
+    /// will be thrown.
+    ///
+    /// - NOTE: A `JQ` instance can only process one input at a time.
+    /// Attempting to processing multiple inputs in parallel may lead to the caller
+    /// having to wait while another input finishes processing. If you need to
+    /// process multiple inputs in parallel, please create a new instance of the
+    /// `JQ` object for each thread.
+    ///
+    /// - parameters:
+    ///   - jsonData: Data containing JSON encoded as UTF-8 to be
+    ///   processed using the jq `program` stored within `self`.
+    @inlinable
+    public func all(for jsonData: Data) throws -> [Data] {
+        try all(for: jsonData, format: DataFormat())
+    }
+}
+
+// MARK: - Private Result Processing
+extension JQ {
+    private enum ProcessingResult {
+        case value(jv)
+        case finished
+        case halt
+        case haltError(message: ProcessingError.ErrorMessage?, exitCode: Int)
+        case exception(message: ProcessingError.ErrorMessage)
+    }
+
+    private func startProcessing(
+        _ json: String,
         outputConfiguration: OutputConfiguration = .init()
-    ) throws -> [String] {
+    ) throws {
         // Parse the input string and throw if parsing fails.
-        let parsedInput = jv_parse(inputJSON)
+        let parsedInput = jv_parse(json)
         guard jv_is_valid(parsedInput) != 0 else {
             let message = errorMessage(from: jv_invalid_get_msg(parsedInput))
             throw ProcessingError.parse(message)
@@ -158,38 +435,97 @@ final public class JQ {
         // single jq_state struct therefore, only one input can be
         // processed at a time.
         unfairLock.lock()
-        defer { unfairLock.unlock() }
 
         // No jq flags are supported yet.
         let jqFlags: Int32 = .zero
         // Start processing input.
         jq_start(jqState, parsedInput, jqFlags)
+    }
 
-        // Start processing the input. The outputs are accumulated into
-        // the output array, until jq_next returns an invalid value.
-        var output = [String]()
-        var result = jq_next(jqState)
-        defer { jv_free(result) }
+    private func next() -> ProcessingResult {
+        let result = jq_next(jqState)
 
-        while jv_is_valid(result) != 0 {
-            output.append(
+        if jv_is_valid(result) != 0 {
+            return .value(result)
+        } else {
+            if jq_halted(jqState) != 0 {
+                // jq program invoked halt or halt_error.
+                return handleHalt()
+            } else if jv_invalid_has_msg(jv_copy(result)) != 0 {
+                // Processing failed due to an uncaught exception.
+                let message = errorMessage(from: jv_invalid_get_msg(jv_copy(result)))
+                return .exception(message: message)
+            } else {
+                return .finished
+            }
+        }
+    }
+
+    private func finishProcessing() {
+        // Free up the memory allocated for the input.
+        jq_start(jqState, jv_null(), 0)
+        unfairLock.unlock()
+    }
+
+    private func processOne(
+        for json: String,
+        outputConfiguration: OutputConfiguration
+    ) throws -> String {
+        try startProcessing(json)
+        defer { finishProcessing() }
+
+        let value = next()
+        switch value {
+        case .value(let jvValue):
+            return generateOutputString(
+                for: jvValue,
+                outputConfiguration: outputConfiguration)
+        case .finished, .halt:
+            throw ProcessingError.noResultEmitted
+        case .haltError(let message, let exitCode):
+            throw ProcessingError.halt(
+                .init(
+                    errorMessage: message,
+                    partialResult: [],
+                    exitCode: exitCode))
+        case .exception(let message):
+            throw ProcessingError.exception(message)
+        }
+    }
+
+    private func processAll(
+        for json: String,
+        outputConfiguration: OutputConfiguration
+    ) throws -> [String] {
+        try startProcessing(json)
+        defer { finishProcessing() }
+        var processedValues = [String]()
+
+        var currentValue = next()
+        while case .value(let jvValue) = currentValue {
+            processedValues.append(
                 generateOutputString(
-                    for: result,
+                    for: jvValue,
                     outputConfiguration: outputConfiguration))
-            result = jq_next(jqState)
+            currentValue = next()
         }
 
-        if jq_halted(jqState) != 0 {
-            // jq program invoked halt or halt_error.
-            return try handleHalt(partialResult: output)
-        } else if jv_invalid_has_msg(jv_copy(result)) != 0 {
-            // Processing failed due to an uncaught exception.
-            let message = errorMessage(from: jv_invalid_get_msg(jv_copy(result)))
+        switch currentValue {
+        case .value:
+            break // Should not occur
+        case .finished, .halt:
+            break // Return normally
+        case .haltError(let message, let exitCode):
+            throw ProcessingError.halt(
+                .init(
+                    errorMessage: message,
+                    partialResult: processedValues,
+                    exitCode: exitCode))
+        case .exception(let message):
             throw ProcessingError.exception(message)
         }
 
-        // Successfully finished processing.
-        return output
+        return processedValues
     }
 }
 
@@ -211,22 +547,18 @@ extension JQ {
         }
     }
 
-    private func handleHalt(partialResult: [String]) throws -> [String] {
-        // As we are using the error throwing semantics of Swift, we need a
-        // clear distinction between a normal return scenario and throwing
-        // an error. Generally, a halt should return normally, and a
-        // halt_error should throw an error. However, here we aren't able to
-        // make a distinction between the invocation of the two halt
-        // functions. To overcome this, we define that the program returns
-        // normally if halted without an error message and an exit code
-        // of 0. In all other cases we will throw.
+    private func handleHalt() -> ProcessingResult {
+        // From the jq_state we aren't able to distinguish between the
+        // invocation of halt and halt_error. To overcome this, we define
+        // that the program halts normally if halted without an error
+        // message and an exit code of 0. In all other cases we will
+        // halt with an error.
 
         let exitCode = jq_get_exit_code(jqState)
         defer { jv_free(exitCode) }
 
-        // If the exitCode is not valid, we assume that halt was invoked
-        // and return immediately.
-        guard jv_is_valid(exitCode) != 0 else { return partialResult }
+        // If the exitCode is not valid, we assume that halt was invoked.
+        guard jv_is_valid(exitCode) != 0 else { return .halt }
 
         // Default exit code for halt_error.
         var exitCodeValue = 5
@@ -235,16 +567,12 @@ extension JQ {
         }
 
         let message = haltMessage(from: jq_get_error_message(jqState))
-        // The program returns normally if halted without an error message
+        // The program halts normally if halted without an error message
         // and an exit code of 0.
         if message == nil, exitCodeValue == .zero {
-            return partialResult
+            return .halt
         } else {
-            throw ProcessingError.halt(
-                .init(
-                    errorMessage: message,
-                    partialResult: partialResult,
-                    exitCode: exitCodeValue))
+            return .haltError(message: message, exitCode: exitCodeValue)
         }
     }
 

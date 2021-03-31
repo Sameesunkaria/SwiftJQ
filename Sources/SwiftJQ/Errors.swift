@@ -66,6 +66,9 @@ extension JQ {
         /// An indication that the program was explicitly halted with an error using
         /// the `halt_error` function.
         case halt(Halt)
+        /// An indication that the program did not emit a result for the given input
+        /// where one was expected.
+        case noResultEmitted
 
         /// A textual representation of this instance.
         public var description: String {
@@ -73,6 +76,7 @@ extension JQ {
             case .parse(let info): return "Parse Error: \(info.description)"
             case .halt(let info): return "Halt Error: \(info.description)"
             case .exception(let info): return "Uncaught Exception: \(info.description)"
+            case .noResultEmitted: return "jq Program did not emit a result for the given input."
             }
         }
     }

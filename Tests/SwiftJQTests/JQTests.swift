@@ -35,43 +35,43 @@ final class JQTests: XCTestCase {
     }
 
     func testProcessingSucceedsForValidInputAndProgram() throws {
-        XCTAssertEqual(try JQ(program: ".").process("{}"), ["{}"])
-        XCTAssertEqual(try JQ(program: ".").process("[]"), ["[]"])
-        XCTAssertEqual(try JQ(program: "debug").process("[]"), ["[]"])
-        XCTAssertEqual(try JQ(program: "inputs").process("[]"), [])
-        XCTAssertEqual(try JQ(program: "input_filename").process("[]"), ["null"])
-        XCTAssertEqual(try JQ(program: "try input catch null").process("[]"), ["null"])
+        XCTAssertEqual(try JQ(program: ".").all(for: "{}"), ["{}"])
+        XCTAssertEqual(try JQ(program: ".").all(for: "[]"), ["[]"])
+        XCTAssertEqual(try JQ(program: "debug").all(for: "[]"), ["[]"])
+        XCTAssertEqual(try JQ(program: "inputs").all(for: "[]"), [])
+        XCTAssertEqual(try JQ(program: "input_filename").all(for: "[]"), ["null"])
+        XCTAssertEqual(try JQ(program: "try input catch null").all(for: "[]"), ["null"])
         XCTAssertEqual(
             try JQ(
                 program: #"include "test_lib"; test_func"#,
-                libraryPaths: [resourcesURL]).process("{}"),
+                libraryPaths: [resourcesURL]).all(for: "{}"),
             [#""It works!""#])
     }
 
     func testProcessingFailsForInvalidInput() throws {
         assertParseError(
-            try JQ(program: ".").process("Not valid JSON"),
+            try JQ(program: ".").all(for: "Not valid JSON"),
             message: "Invalid numeric literal at line 1, column 4 (while parsing 'Not valid JSON')")
         assertParseError(
-            try JQ(program: ".").process("{}\n{}\n{}"),
+            try JQ(program: ".").all(for: "{}\n{}\n{}"),
             message: "Unexpected extra JSON values (while parsing '{}\n{}\n{}')")
     }
 
     func testProcessingFailsForUncaughtExceptions() throws {
         assertExceptionError(
-            try JQ(program: "first").process("{}"),
+            try JQ(program: "first").all(for: "{}"),
             message: "Cannot index object with number")
 
         // The jq input function is currently not supported
         // and should throw an exception
         assertExceptionError(
-            try JQ(program: "input").process("{}"),
+            try JQ(program: "input").all(for: "{}"),
             message: "break")
 
         // The input_line_number function is not supported
         // and throws an exception when called.
         assertExceptionError(
-            try JQ(program: "input_line_number").process("{}"),
+            try JQ(program: "input_line_number").all(for: "{}"),
             message: "Unknown input line number")
     }
 
@@ -79,26 +79,26 @@ final class JQTests: XCTestCase {
         // A halt should cause the processing to stop early.
         XCTAssertEqual(
             try JQ(program: ".[] | if .%3 == 0 then halt else . end")
-                .process("[1, 2, 3, 4, 5]"),
+                .all(for: "[1, 2, 3, 4, 5]"),
             ["1", "2"])
 
         assertHaltError(
             try JQ(program: ".[] | if .%3 == 0 then halt_error else . end")
-                .process("[1, 2, 3, 4, 5]"),
+                .all(for: "[1, 2, 3, 4, 5]"),
             message: "3",
             exitCode: 5, // Default exit code for halt_error
             partialResult: ["1", "2"])
 
         assertHaltError(
             try JQ(program: ".[] | if .%3 == 0 then halt_error(0) else . end")
-                .process("[1, 2, 3, 4, 5]"),
+                .all(for: "[1, 2, 3, 4, 5]"),
             message: "3",
             exitCode: 0,
             partialResult: ["1", "2"])
 
         assertHaltError(
             try JQ(program: ".[] | if .%3 == 0 then null | halt_error else . end")
-                .process("[1, 2, 3, 4, 5]"),
+                .all(for: "[1, 2, 3, 4, 5]"),
             message: nil,
             exitCode: 5,
             partialResult: ["1", "2"])
@@ -107,35 +107,35 @@ final class JQTests: XCTestCase {
         // should not throw.
         XCTAssertEqual(
             try JQ(program: ".[] | if .%3 == 0 then null | halt_error(0) else . end")
-                .process("[1, 2, 3, 4, 5]"),
+                .all(for: "[1, 2, 3, 4, 5]"),
             ["1", "2"])
     }
 
     func testOutputConfigurations() throws {
         XCTAssertEqual(
-            try JQ(program: ".").process(#"{"c":10,"b":5,"a":7}"#),
+            try JQ(program: ".").all(for: #"{"c":10,"b":5,"a":7}"#),
             [#"{"c":10,"b":5,"a":7}"#])
 
         XCTAssertEqual(
-            try JQ(program: ".").process(#""test""#),
+            try JQ(program: ".").all(for: #""test""#),
             [#""test""#])
 
         XCTAssertEqual(
-            try JQ(program: ".").process(
-                #"{"c":10,"b":5,"a":7}"#,
-                outputConfiguration: .init(sortedKeys: true)),
+            try JQ(program: ".").all(
+                for: #"{"c":10,"b":5,"a":7}"#,
+                format: StringFormat(config: .init(sortedKeys: true))),
             [#"{"a":7,"b":5,"c":10}"#])
 
         XCTAssertEqual(
-            try JQ(program: ".").process(
-                #""test""#,
-                outputConfiguration: .init(rawString: true)),
+            try JQ(program: ".").all(
+                for: #""test""#,
+                format: StringFormat(config: .init(rawString: true))),
             ["test"])
 
         XCTAssertEqual(
-            try JQ(program: ".").process(
-                #"{"c":10,"b":5,"a":7}"#,
-                outputConfiguration: .init(pretty: true)),
+            try JQ(program: ".").all(
+                for: #"{"c":10,"b":5,"a":7}"#,
+                format: StringFormat(config: .init(pretty: true))),
             [
                 """
                 {
@@ -147,9 +147,9 @@ final class JQTests: XCTestCase {
             ])
 
         XCTAssertEqual(
-            try JQ(program: ".").process(
-                #"{"c":10,"b":5,"a":7}"#,
-                outputConfiguration: .init(pretty: true, indent: .spaces(2))),
+            try JQ(program: ".").all(
+                for: #"{"c":10,"b":5,"a":7}"#,
+                format: StringFormat(config: .init(pretty: true, indent: .spaces(2)))),
             [
                 """
                 {
@@ -161,9 +161,9 @@ final class JQTests: XCTestCase {
             ])
 
         XCTAssertEqual(
-            try JQ(program: ".").process(
-                #"{"c":10,"b":5,"a":7}"#,
-                outputConfiguration: .init(pretty: true, indent: .tabs)),
+            try JQ(program: ".").all(
+                for: #"{"c":10,"b":5,"a":7}"#,
+                format: StringFormat(config: .init(pretty: true, indent: .tabs))),
             [
                 """
                 {
@@ -175,13 +175,14 @@ final class JQTests: XCTestCase {
             ])
 
         XCTAssertEqual(
-            try JQ(program: ".[]").process(
-                #"[{"c":10,"b":5,"a":7}, "test"]"#,
-                outputConfiguration: .init(
-                    sortedKeys: true,
-                    rawString: true,
-                    pretty: true,
-                    indent: .spaces(2))),
+            try JQ(program: ".[]").all(
+                for: #"[{"c":10,"b":5,"a":7}, "test"]"#,
+                format: StringFormat(
+                    config: .init(
+                        sortedKeys: true,
+                        rawString: true,
+                        pretty: true,
+                        indent: .spaces(2)))),
             [
                 """
                 {
