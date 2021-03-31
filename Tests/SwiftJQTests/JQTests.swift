@@ -4,6 +4,7 @@ import SwiftJQ
 final class JQTests: XCTestCase {
     let resourcesURL = Bundle.module.resourceURL!
 
+    // MARK: - Init tests
     func testInitSucceedsForValidProgram() throws {
         XCTAssertEqual(try JQ(program: "").program, "")
         XCTAssertEqual(try JQ(program: ".").program, ".")
@@ -33,6 +34,132 @@ final class JQTests: XCTestCase {
                 "jq: 1 compile error"
             ])
     }
+
+    // MARK: - String input processing tests
+
+    func testFirstString() throws {
+        let jq = try JQ(program: ".[]")
+        let stringFormatter = StringFormatter()
+        let decoder = JSONDecoder()
+        let intFormatter = DecodableTypeFormatter(decoding: Int.self, using: decoder)
+
+        XCTAssertEqual(try jq.first(for: "[1,2,3,4]", formatter: stringFormatter), "1")
+        XCTAssertEqual(try jq.first(for: "[1,2,3,4]", formatter: intFormatter), 1)
+        XCTAssertEqual(try jq.first(for: "[]", formatter: stringFormatter), nil)
+        XCTAssertEqual(try jq.first(for: "[]", formatter: intFormatter), nil)
+
+        XCTAssertEqual(try jq.first(for: "[1,2,3,4]"), "1")
+        XCTAssertEqual(try jq.first(for: "[]"), nil)
+    }
+
+    func testOneString() throws {
+        let jq = try JQ(program: ".[]")
+        let stringFormatter = StringFormatter()
+        let decoder = JSONDecoder()
+        let intFormatter = DecodableTypeFormatter(decoding: Int.self, using: decoder)
+
+        XCTAssertEqual(try jq.one(for: "[1,2,3,4]", formatter: stringFormatter), "1")
+        XCTAssertEqual(try jq.one(for: "[1,2,3,4]", formatter: intFormatter), 1)
+        XCTAssertThrowsError(try jq.one(for: "[]", formatter: stringFormatter)) { error in
+            guard case JQ.ProcessingError.noResultEmitted = error else {
+                XCTFail("Incorrect error thrown: \(error)")
+                return
+            }
+        }
+        XCTAssertThrowsError(try jq.one(for: "[]", formatter: intFormatter)) { error in
+            guard case JQ.ProcessingError.noResultEmitted = error else {
+                XCTFail("Incorrect error thrown: \(error)")
+                return
+            }
+        }
+
+        XCTAssertEqual(try jq.one(for: "[1,2,3,4]"), "1")
+        XCTAssertThrowsError(try jq.one(for: "[]")) { error in
+            guard case JQ.ProcessingError.noResultEmitted = error else {
+                XCTFail("Incorrect error thrown: \(error)")
+                return
+            }
+        }
+    }
+
+    func testAllString() throws {
+        let jq = try JQ(program: ".[]")
+        let stringFormatter = StringFormatter()
+        let decoder = JSONDecoder()
+        let intFormatter = DecodableTypeFormatter(decoding: Int.self, using: decoder)
+
+        XCTAssertEqual(try jq.all(for: "[1,2,3,4]", formatter: stringFormatter), ["1", "2", "3", "4"])
+        XCTAssertEqual(try jq.all(for: "[1,2,3,4]", formatter: intFormatter), [1, 2, 3, 4])
+        XCTAssertEqual(try jq.all(for: "[]", formatter: stringFormatter), [])
+        XCTAssertEqual(try jq.all(for: "[]", formatter: intFormatter), [])
+
+        XCTAssertEqual(try jq.all(for: "[1,2,3,4]"), ["1", "2", "3", "4"])
+        XCTAssertEqual(try jq.all(for: "[]"), [])
+    }
+
+    // MARK: - Data input processing tests
+
+    func testFirstData() throws {
+        let jq = try JQ(program: ".[]")
+        let stringFormatter = StringFormatter()
+        let decoder = JSONDecoder()
+        let intFormatter = DecodableTypeFormatter(decoding: Int.self, using: decoder)
+
+        XCTAssertEqual(try jq.first(for: Data("[1,2,3,4]".utf8), formatter: stringFormatter), "1")
+        XCTAssertEqual(try jq.first(for: Data("[1,2,3,4]".utf8), formatter: intFormatter), 1)
+        XCTAssertEqual(try jq.first(for: Data("[]".utf8), formatter: stringFormatter), nil)
+        XCTAssertEqual(try jq.first(for: Data("[]".utf8), formatter: intFormatter), nil)
+
+        XCTAssertEqual(try jq.first(for: Data("[1,2,3,4]".utf8)), Data("1".utf8))
+        XCTAssertEqual(try jq.first(for: Data("[]".utf8)), nil)
+    }
+
+    func testOneData() throws {
+        let jq = try JQ(program: ".[]")
+        let stringFormatter = StringFormatter()
+        let decoder = JSONDecoder()
+        let intFormatter = DecodableTypeFormatter(decoding: Int.self, using: decoder)
+
+        XCTAssertEqual(try jq.one(for: Data("[1,2,3,4]".utf8), formatter: stringFormatter), "1")
+        XCTAssertEqual(try jq.one(for: Data("[1,2,3,4]".utf8), formatter: intFormatter), 1)
+        XCTAssertThrowsError(try jq.one(for: Data("[]".utf8), formatter: stringFormatter)) { error in
+            guard case JQ.ProcessingError.noResultEmitted = error else {
+                XCTFail("Incorrect error thrown: \(error)")
+                return
+            }
+        }
+        XCTAssertThrowsError(try jq.one(for: Data("[]".utf8), formatter: intFormatter)) { error in
+            guard case JQ.ProcessingError.noResultEmitted = error else {
+                XCTFail("Incorrect error thrown: \(error)")
+                return
+            }
+        }
+
+        XCTAssertEqual(try jq.one(for: Data("[1,2,3,4]".utf8)), Data("1".utf8))
+        XCTAssertThrowsError(try jq.one(for: Data("[]".utf8))) { error in
+            guard case JQ.ProcessingError.noResultEmitted = error else {
+                XCTFail("Incorrect error thrown: \(error)")
+                return
+            }
+        }
+    }
+
+    func testAllData() throws {
+        let jq = try JQ(program: ".[]")
+        let stringFormatter = StringFormatter()
+        let decoder = JSONDecoder()
+        let intFormatter = DecodableTypeFormatter(decoding: Int.self, using: decoder)
+
+        XCTAssertEqual(try jq.all(for: Data("[1,2,3,4]".utf8), formatter: stringFormatter), ["1", "2", "3", "4"])
+        XCTAssertEqual(try jq.all(for: Data("[1,2,3,4]".utf8), formatter: intFormatter), [1, 2, 3, 4])
+        XCTAssertEqual(try jq.all(for: Data("[]".utf8), formatter: stringFormatter), [])
+        XCTAssertEqual(try jq.all(for: Data("[]".utf8), formatter: intFormatter), [])
+
+        XCTAssertEqual(try jq.all(for: Data("[1,2,3,4]".utf8)), ["1", "2", "3", "4"].map { Data($0.utf8) })
+        XCTAssertEqual(try jq.all(for: Data("[]".utf8)), [])
+    }
+
+    // MARK: - jq implemented functionality tests
 
     func testProcessingSucceedsForValidInputAndProgram() throws {
         XCTAssertEqual(try JQ(program: ".").all(for: "{}"), ["{}"])
@@ -195,6 +322,8 @@ final class JQTests: XCTestCase {
             ])
     }
 }
+
+// MARK: - Helpers
 
 extension JQTests {
     func assertCompileError<T>(
