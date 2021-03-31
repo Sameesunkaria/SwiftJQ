@@ -321,6 +321,13 @@ final class JQTests: XCTestCase {
                 "test"
             ])
     }
+
+    func testAttemptingToProcessInParallel() throws {
+        let jq = try JQ(program: ".")
+        DispatchQueue.concurrentPerform(iterations: 10) { index in
+            XCTAssertEqual(try? jq.one(for: String(index)), String(index))
+        }
+    }
 }
 
 // MARK: - Helpers
