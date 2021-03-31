@@ -35,7 +35,7 @@ import Foundation
 ///
 /// let expensiveFruits = try expensiveFruitsFilter.all(
 ///     for: fruitsJSON,
-///     format: StringFormat(config: .init(rawString: true)))
+///     format: StringFormatter(config: .init(rawString: true)))
 ///
 /// print(expensiveFruits) // Prints ["apple", "avocado"]
 /// ```
@@ -140,10 +140,11 @@ final public class JQ {
     /// - parameters:
     ///   - json: A string containing JSON to be processed using the jq
     ///   `program` stored within `self`.
-    ///   - format: An output format to which the results are transformed.
-    public func first<T: OutputFormat>(for json: String, format: T) throws -> T.Format? {
+    ///   - formatter: An output formatter used to transform the result
+    ///   into the desired format.
+    public func first<F: OutputFormatter>(for json: String, formatter: F) throws -> F.Format? {
         do {
-            return try one(for: json, format: format)
+            return try one(for: json, formatter: formatter)
         } catch ProcessingError.noResultEmitted {
             return nil
         }
@@ -168,10 +169,11 @@ final public class JQ {
     /// - parameters:
     ///   - json: A string containing JSON to be processed using the jq
     ///   `program` stored within `self`.
-    ///   - format: An output format to which the results are transformed.
-    public func one<T: OutputFormat>(for json: String, format: T) throws -> T.Format {
-        let stringResult = try processOne(for: json, outputConfiguration: format.config)
-        return try format.transform(string: stringResult)
+    ///   - formatter: An output formatter used to transform the result
+    ///   into the desired format.
+    public func one<F: OutputFormatter>(for json: String, formatter: F) throws -> F.Format {
+        let stringResult = try processOne(for: json, outputConfiguration: formatter.config)
+        return try formatter.transform(string: stringResult)
     }
 
     /// Returns all values emitted while processing the JSON input, formatted
@@ -193,10 +195,11 @@ final public class JQ {
     /// - parameters:
     ///   - json: A string containing JSON to be processed using the jq
     ///   `program` stored within `self`.
-    ///   - format: An output format to which the results are transformed.
-    public func all<T: OutputFormat>(for json: String, format: T) throws -> [T.Format] {
-        let stringResults = try processAll(for: json, outputConfiguration: format.config)
-        return try stringResults.map(format.transform)
+    ///   - formatter: An output formatter used to transform the result
+    ///   into the desired format.
+    public func all<F: OutputFormatter>(for json: String, formatter: F) throws -> [F.Format] {
+        let stringResults = try processAll(for: json, outputConfiguration: formatter.config)
+        return try stringResults.map(formatter.transform)
     }
 
     /// Returns the first value emitted while processing the JSON input, formatted
@@ -218,9 +221,10 @@ final public class JQ {
     /// - parameters:
     ///   - jsonData: Data containing JSON encoded as UTF-8 to be
     ///   processed using the jq `program` stored within `self`.
-    ///   - format: An output format to which the results are transformed.
-    public func first<T: OutputFormat>(for jsonData: Data, format: T) throws -> T.Format? {
-        try first(for: String(decoding: jsonData, as: UTF8.self), format: format)
+    ///   - formatter: An output formatter used to transform the result
+    ///   into the desired format.
+    public func first<F: OutputFormatter>(for jsonData: Data, formatter: F) throws -> F.Format? {
+        try first(for: String(decoding: jsonData, as: UTF8.self), formatter: formatter)
     }
 
     /// Returns the first value emitted while processing the JSON input, formatted
@@ -243,9 +247,10 @@ final public class JQ {
     /// - parameters:
     ///   - jsonData: Data containing JSON encoded as UTF-8 to be
     ///   processed using the jq `program` stored within `self`.
-    ///   - format: An output format to which the results are transformed.
-    public func one<T: OutputFormat>(for jsonData: Data, format: T) throws -> T.Format {
-        try one(for: String(decoding: jsonData, as: UTF8.self), format: format)
+    ///   - formatter: An output formatter used to transform the result
+    ///   into the desired format.
+    public func one<F: OutputFormatter>(for jsonData: Data, formatter: F) throws -> F.Format {
+        try one(for: String(decoding: jsonData, as: UTF8.self), formatter: formatter)
     }
 
     /// Returns all values emitted while processing the JSON input, formatted
@@ -268,9 +273,10 @@ final public class JQ {
     /// - parameters:
     ///   - jsonData: Data containing JSON encoded as UTF-8 to be
     ///   processed using the jq `program` stored within `self`.
-    ///   - format: An output format to which the results are transformed.
-    public func all<T: OutputFormat>(for jsonData: Data, format: T) throws -> [T.Format] {
-        try all(for: String(decoding: jsonData, as: UTF8.self), format: format)
+    ///   - formatter: An output formatter used to transform the result
+    ///   into the desired format.
+    public func all<F: OutputFormatter>(for jsonData: Data, formatter: F) throws -> [F.Format] {
+        try all(for: String(decoding: jsonData, as: UTF8.self), formatter: formatter)
     }
 
     /// Returns the first value emitted while processing the JSON input, as
@@ -292,7 +298,7 @@ final public class JQ {
     ///   `program` stored within `self`.
     @inlinable
     public func first(for json: String) throws -> String? {
-        try first(for: json, format: StringFormat())
+        try first(for: json, formatter: StringFormatter())
     }
 
     /// Returns the first value emitted while processing the JSON input, as
@@ -315,7 +321,7 @@ final public class JQ {
     ///   `program` stored within `self`.
     @inlinable
     public func one(for json: String) throws -> String {
-        try one(for: json, format: StringFormat())
+        try one(for: json, formatter: StringFormatter())
     }
 
     /// Returns all values emitted while processing the JSON input, as an
@@ -337,7 +343,7 @@ final public class JQ {
     ///   `program` stored within `self`.
     @inlinable
     public func all(for json: String) throws -> [String] {
-        try all(for: json, format: StringFormat())
+        try all(for: json, formatter: StringFormatter())
     }
 
     /// Returns the first value emitted while processing the JSON input,
@@ -359,7 +365,7 @@ final public class JQ {
     ///   processed using the jq `program` stored within `self`.
     @inlinable
     public func first(for jsonData: Data) throws -> Data? {
-        try first(for: jsonData, format: DataFormat())
+        try first(for: jsonData, formatter: DataFormatter())
     }
 
     /// Returns the first value emitted while processing the JSON input,
@@ -369,8 +375,7 @@ final public class JQ {
     /// Processing an input may yield zero, one or many results. Only the first result
     /// is processed and returned. If the input is not a valid JSON or the program does
     /// not emit any value for the given input or the jq programs does not finish
-    /// successfully a `JQ.ProcessingError` will be thrown. If transformation into
-    /// the output format fails, the transformation error is rethrown.
+    /// successfully a `JQ.ProcessingError` will be thrown.
     ///
     /// - NOTE: A `JQ` instance can only process one input at a time.
     /// Attempting to processing multiple inputs in parallel may lead to the caller
@@ -383,7 +388,7 @@ final public class JQ {
     ///   processed using the jq `program` stored within `self`.
     @inlinable
     public func one(for jsonData: Data) throws -> Data {
-        try one(for: jsonData, format: DataFormat())
+        try one(for: jsonData, formatter: DataFormatter())
     }
 
     /// Returns all values emitted while processing the JSON input, as an
@@ -406,7 +411,7 @@ final public class JQ {
     ///   processed using the jq `program` stored within `self`.
     @inlinable
     public func all(for jsonData: Data) throws -> [Data] {
-        try all(for: jsonData, format: DataFormat())
+        try all(for: jsonData, formatter: DataFormatter())
     }
 }
 

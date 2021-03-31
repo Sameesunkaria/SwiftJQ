@@ -123,19 +123,19 @@ final class JQTests: XCTestCase {
         XCTAssertEqual(
             try JQ(program: ".").all(
                 for: #"{"c":10,"b":5,"a":7}"#,
-                format: StringFormat(config: .init(sortedKeys: true))),
+                formatter: StringFormatter(config: .init(sortedKeys: true))),
             [#"{"a":7,"b":5,"c":10}"#])
 
         XCTAssertEqual(
             try JQ(program: ".").all(
                 for: #""test""#,
-                format: StringFormat(config: .init(rawString: true))),
+                formatter: StringFormatter(config: .init(rawString: true))),
             ["test"])
 
         XCTAssertEqual(
             try JQ(program: ".").all(
                 for: #"{"c":10,"b":5,"a":7}"#,
-                format: StringFormat(config: .init(pretty: true))),
+                formatter: StringFormatter(config: .init(pretty: true))),
             [
                 """
                 {
@@ -149,7 +149,7 @@ final class JQTests: XCTestCase {
         XCTAssertEqual(
             try JQ(program: ".").all(
                 for: #"{"c":10,"b":5,"a":7}"#,
-                format: StringFormat(config: .init(pretty: true, indent: .spaces(2)))),
+                formatter: StringFormatter(config: .init(pretty: true, indent: .spaces(2)))),
             [
                 """
                 {
@@ -163,7 +163,7 @@ final class JQTests: XCTestCase {
         XCTAssertEqual(
             try JQ(program: ".").all(
                 for: #"{"c":10,"b":5,"a":7}"#,
-                format: StringFormat(config: .init(pretty: true, indent: .tabs))),
+                formatter: StringFormatter(config: .init(pretty: true, indent: .tabs))),
             [
                 """
                 {
@@ -177,7 +177,7 @@ final class JQTests: XCTestCase {
         XCTAssertEqual(
             try JQ(program: ".[]").all(
                 for: #"[{"c":10,"b":5,"a":7}, "test"]"#,
-                format: StringFormat(
+                formatter: StringFormatter(
                     config: .init(
                         sortedKeys: true,
                         rawString: true,
