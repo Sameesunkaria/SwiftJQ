@@ -1,5 +1,5 @@
-import XCTest
 import SwiftJQ
+import XCTest
 
 final class JQTests: XCTestCase {
     let resourcesURL = Bundle.module.resourceURL!

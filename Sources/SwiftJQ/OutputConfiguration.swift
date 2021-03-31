@@ -2,9 +2,9 @@ import Cjq
 
 extension JQ {
     /// Output configuration options for the result of the jq program.
-    public struct OutputConfiguration {
+    public struct OutputConfiguration: Equatable {
         /// Represents white space characters to use for indenting pretty output.
-        public enum IndentSpace {
+        public enum IndentSpace: Equatable {
             /// The pretty output is indented with a single tab for each level.
             case tabs
             /// The pretty output is indented with the associated number of
