@@ -35,7 +35,7 @@ import Foundation
 ///
 /// let expensiveFruits = try expensiveFruitsFilter.all(
 ///     for: fruitsJSON,
-///     format: StringFormatter(config: .init(rawString: true)))
+///     formatter: StringFormatter(config: .init(rawString: true)))
 ///
 /// print(expensiveFruits) // Prints ["apple", "avocado"]
 /// ```
