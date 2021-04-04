@@ -1,6 +1,6 @@
 # SwiftJQ - A Swift interface for jq
 
-SwiftJQ provides you with a native interface for running [jq](https://stedolan.github.io/jq/) on macOS, iOS, tvOS, and watchOS!
+SwiftJQ provides you with a native interface for executing [jq](https://stedolan.github.io/jq/) on macOS, iOS, tvOS, and watchOS; taking JSON processing in Swift to the next level! 🚀
 
 ## How it works
 
