@@ -5,6 +5,7 @@ final class JQTests: XCTestCase {
     let resourcesURL = Bundle.module.resourceURL!
 
     // MARK: - Init tests
+
     func testInitSucceedsForValidProgram() throws {
         XCTAssertEqual(try JQ(program: "").program, "")
         XCTAssertEqual(try JQ(program: ".").program, ".")
@@ -320,6 +321,40 @@ final class JQTests: XCTestCase {
                 """,
                 "test"
             ])
+    }
+
+    // MARK: - Other tests
+
+    func testOutputFormatters() {
+        struct ABC: Codable, Equatable {
+            let a: Int
+            let b: Int
+            let c: Int
+        }
+
+        let stringFormatter = StringFormatter()
+        let dataFormatter = DataFormatter()
+        let abcFormatter = DecodableTypeFormatter(
+            decoding: ABC.self,
+            using: JSONDecoder())
+
+        XCTAssertEqual(
+            try JQ(program: ".").one(
+                for: #"{"c":10,"b":5,"a":7}"#,
+                formatter: stringFormatter),
+            #"{"c":10,"b":5,"a":7}"#)
+
+        XCTAssertEqual(
+            try JQ(program: ".").one(
+                for: #"{"c":10,"b":5,"a":7}"#,
+                formatter: dataFormatter),
+            Data(#"{"c":10,"b":5,"a":7}"#.utf8))
+
+        XCTAssertEqual(
+            try JQ(program: ".").one(
+                for: #"{"c":10,"b":5,"a":7}"#,
+                formatter: abcFormatter),
+            ABC(a: 7, b: 5, c: 10))
     }
 
     func testAttemptingToProcessInParallel() throws {
