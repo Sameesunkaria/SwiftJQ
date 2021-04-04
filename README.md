@@ -251,6 +251,7 @@ Once a `JQ` object is initialized, you may use it to process inputs from any thr
 
 As the jq program is executed from a library instead of being executed from the terminal, some I/O functions behave differently, as they needed a custom implementation to suit our needs. The functions and their behaviors are listed below:
 
+- **`debug`**: Prints the debug output to the console.
 - **`halt`**: Halts the execution of the program and returns successfully immediately.
 - **`halt_error`**: Fails processing of the input and throws a `JQ.ProcessingError.halt` error.
 - **`halt_error/1`**: Fails processing of the input and throws a `JQ.ProcessingError.halt` error, except if the message (input) is `null` and the exit code (first argument) is `0`, where it is treated as a `halt` instead.
