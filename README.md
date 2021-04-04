@@ -27,7 +27,9 @@ The `SwiftJQ` package exposes a `JQ` class, which you can use for evaluating any
 
 ### Initialization
 
-Initialize a `JQ` object with the jq program. The program is compiled during this stage. Any compilation errors that may occur are thrown here (see `JQ.InitializationError`).
+Initialize a `JQ` object with the jq program. The program is compiled during this stage. Any compilation errors that may occur are thrown here (see `JQ.InitializationError`). 
+
+An example program which takes in an array of numbers as input and emits all even numbers:
 
 ```swift
 let program = try JQ(program: ".[] | select(.%2 == 0)")
@@ -41,6 +43,8 @@ Once the instance of the `JQ` object is initialized, you can use it to process J
 
 Returns the first value emitted by the jq program and `nil` if no value is emitted.
 
+The result obtained by processing the `first` output using the program shown in the example for initialization:
+
 ```swift
 let result = try program.first(for: "[1, 2, 3]")
 // result: String? == "2"
@@ -50,6 +54,8 @@ let result = try program.first(for: "[1, 2, 3]")
 
 Returns the first value emitted by the jq program and throws if no value is emitted. `one` is useful when a jq program is expected to produce at least one result.
 
+The result obtained by processing `one` output using the program shown in the example for initialization:
+
 ```swift
 let result = try program.one(for: "[1, 2, 3]")
 // result: String == "2"
@@ -58,6 +64,8 @@ let result = try program.one(for: "[1, 2, 3]")
 #### `all`
 
 Returns an array of all the emitted values by the jq program.
+
+The result obtained by processing `all` outputs using the program shown in the example for initialization:
 
 ```swift
 let result = try program.all(for: "[1, 2, 3, 4, 5, 6]")
