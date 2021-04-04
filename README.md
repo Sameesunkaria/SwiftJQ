@@ -259,7 +259,7 @@ Once a `JQ` object is initialized, you may use it to process inputs from any thr
 
 ## JQ I/O functions
 
-As the jq program is executed from a library instead of being executed from the terminal, some I/O functions behave differently, as they needed a custom implementation to suit our needs. The functions and their behaviors are listed below:
+As the jq program is executed from a library instead of being executed from the terminal, some jq I/O functions needed a custom implementation to suit our needs; therefore, they behave differently. The functions and their behaviors are listed below:
 
 - **`debug`**: Prints the debug output to the console.
 - **`halt`**: Halts the execution of the program and returns successfully immediately.
