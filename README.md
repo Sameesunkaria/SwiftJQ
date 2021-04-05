@@ -52,6 +52,13 @@ let countryTransform = try JQ(program: """
 let countries = try countryTransform.all(
   for: fruitsJSON, 
   formatter: countryFormatter)
+  
+// countries: [Country] == [
+//   Country(name: "China", fruits: ["apple", "banana"]),
+//   Country(name: "India", fruits: ["apple", "banana"]),
+//   Country(name: "Philippines", fruits: ["banana"]),
+//   Country(name: "Russia", fruits: ["apple"])
+// ]
 ```
 
 Of course, you may need to get familiar with jq. Luckily, you can get a hold of the well documented [jq manual](https://stedolan.github.io/jq/manual/v1.6/) and if you have questions, there is a significant community on [Stack Overflow](https://stackoverflow.com/questions/tagged/jq).
