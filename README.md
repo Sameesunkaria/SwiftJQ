@@ -2,6 +2,69 @@
 
 SwiftJQ provides you with a native interface for executing [jq](https://stedolan.github.io/jq/) on macOS, iOS, tvOS, and watchOS; taking JSON processing in Swift to the next level! 🚀
 
+## Why use jq with Swift?
+
+jq is an excellent tool for transforming JSON. With `SwiftJQ` you can experience the strengths of jq from within your Swift code. Let's start with a simple example. In this example, as the input JSON we have a list of fruits and the countries which are a top producer of that fruit. 
+
+```json
+[
+  {
+    "name": "apple",
+    "price": 1.2,
+    "locations": [
+      "China",
+      "India",
+      "Russia"
+    ]
+  },
+  {
+    "name": "banana",
+    "price": 0.5,
+    "locations": [
+      "India",
+      "China",
+      "Philippines"
+    ]
+  },
+  {
+    "name": "avocado",
+    "price": 2.5,
+    "locations": [
+      "Mexico",
+      "Dominican Republic",
+      "Peru"
+    ]
+  }
+]
+```
+
+However, in our Swift code we want a list of countries and the fruits they produce. With `SwiftJQ` this transformation is easily possibly without introducing any intermediate types (like DTOs).
+
+```swift
+let fruitsJSON = "..." // JSON from above as String or Data
+
+struct Country: Codable {
+  var name: String
+  var fruits: [String]
+}
+
+let countryFormatter = DecodableTypeFormatter(
+  decoding: Country.self, 
+  using: JSONDecoder())
+
+let countryTransform = try JQ(program: """
+  map({country: (.locations[]), fruit: .name})
+  | group_by(.country)[]
+  | {name: first.country, fruits: map(.fruit)}
+  """)
+
+let countries = try countryTransform.all(
+  for: fruitsJSON, 
+  formatter: countryFormatter)
+```
+
+Of course, you may need to get familiar with jq. Luckily, you can get a hold of the well documented [jq manual](https://stedolan.github.io/jq/manual/v1.6/) and if you have questions, there is a significant community on [Stack Overflow](https://stackoverflow.com/questions/tagged/jq).
+
 ## How it works
 
 SwiftJQ wraps the C library for jq with a convenient Swift interface which feels right at home with other swift code. The C library for jq is pulled in as an XCFramework binary target by Swift Package Manager. Currently, this package uses the jq 1.6 release version. To find out more about the pre-compiled static library and verify its authenticity, please check out the [JQ-Darwin repository](https://github.com/Sameesunkaria/JQ-Darwin).
