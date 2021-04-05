@@ -25,15 +25,6 @@ jq is an excellent tool for transforming JSON. With `SwiftJQ` you can experience
       "China",
       "Philippines"
     ]
-  },
-  {
-    "name": "avocado",
-    "price": 2.5,
-    "locations": [
-      "Mexico",
-      "Dominican Republic",
-      "Peru"
-    ]
   }
 ]
 ```
