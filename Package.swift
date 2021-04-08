@@ -26,11 +26,11 @@ let package = Package(
             resources: [.process("Resources")]),
         .binaryTarget(
             name: "Cjq",
-            url: "https://github.com/Sameesunkaria/JQ-Darwin/releases/download/1.0.0/Cjq.xcframework.zip",
-            checksum: "60d6ac4ccbf6d56e0437122665182acd8f58b725d56cbeafcb956ab8da80afad"),
+            url: "https://github.com/Sameesunkaria/JQ-Darwin/releases/download/1.0.1/Cjq.xcframework.zip",
+            checksum: "67ec20a7f2fd61c946476bec28eabfb1a1c971c412454f15ff646cfc5d7fb603"),
         .binaryTarget(
             name: "Coniguruma",
-            url: "https://github.com/Sameesunkaria/JQ-Darwin/releases/download/1.0.0/Coniguruma.xcframework.zip",
-            checksum: "0d4013da2c53e05063a3452e1f013350c1979611a311478049f203f154f92794"),
+            url: "https://github.com/Sameesunkaria/JQ-Darwin/releases/download/1.0.1/Coniguruma.xcframework.zip",
+            checksum: "c307ff4552ab8e110e3ecaf7bf4823991cc5dd059065b32e1b3daf9d15fe7081"),
     ]
 )
