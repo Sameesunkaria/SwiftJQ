@@ -41,7 +41,7 @@ jobs:
     - name: watchOS Tests
       run: |
         set -o pipefail
-        xcodebuild -scheme SwiftJQ -sdk watchsimulator -destination 'platform=watchOS Simulator,name=Apple Watch Series 5 - 40mm' clean test | xcpretty -c  
+        DISABLE_TESTS=true xcodebuild -scheme SwiftJQ -sdk watchsimulator -destination 'platform=watchOS Simulator,name=Apple Watch Series 5 - 40mm' clean build | xcpretty -c
     
     - name: tvOS Tests
       run: |

@@ -34,3 +34,11 @@ let package = Package(
             checksum: "c307ff4552ab8e110e3ecaf7bf4823991cc5dd059065b32e1b3daf9d15fe7081"),
     ]
 )
+
+import Foundation
+
+// Temporary workaround so builds on watchOS pass.
+// watchOS will support XCTest with Xcode 12.5.
+if ProcessInfo.processInfo.environment["DISABLE_TESTS"] == "true" {
+    package.targets.removeAll(where: \.isTest)
+}
