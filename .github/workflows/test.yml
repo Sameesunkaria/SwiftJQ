@@ -8,6 +8,7 @@ on:
 
 jobs:
   build:
+    name: Run tests
     runs-on: macos-latest
     strategy:
       fail-fast: false
@@ -16,7 +17,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Show environments
+    - name: Show environment
       run: |
         swift --version
         xcodebuild -version
@@ -27,32 +28,32 @@ jobs:
         swift test -v
     - name: macOS Tests
       run: |
-        set -o pipefail && \
-          xcodebuild \
+        set -o pipefail
+        xcodebuild \
           -scheme SwiftJQ \
           -sdk macosx \         
           -destination 'platform=OS X,arch=x86_64' \                               
           clean test               
     - name: iOS Tests
       run: |
-        set -o pipefail && \
-          xcodebuild \
+        set -o pipefail
+        xcodebuild \
           -scheme SwiftJQ \
           -sdk iphonesimulator \
           -destination 'platform=iOS Simulator,name=iPhone 12,OS=14.4' \              
           clean test               
     - name: watchOS Tests
       run: |
-        set -o pipefail && \
-          xcodebuild \
+        set -o pipefail
+        xcodebuild \
           -scheme SwiftJQ \
           -sdk watchsimulator \
           -destination 'platform=watchOS Simulator,name=Apple Watch Series 5 - 40mm' \
           clean test               
     - name: tvOS Tests
       run: |
-        set -o pipefail && \
-          xcodebuild \
+        set -o pipefail
+        xcodebuild \
           -scheme SwiftJQ \
           -sdk appletvsimulator \         
           -destination 'platform=tvOS Simulator,name=Apple TV' \                               
