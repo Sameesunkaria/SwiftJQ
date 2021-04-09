@@ -11,50 +11,39 @@ jobs:
     name: Run tests
     runs-on: macos-latest
     strategy:
-      fail-fast: false
       matrix:
         xcode_version: ["12.4"]
+      fail-fast: false
 
     steps:
     - uses: actions/checkout@v2
+    
     - name: Show environment
       run: |
         swift --version
         xcodebuild -version
-
+        
     - name: Package Tests
       run: |
         swift build -v
         swift test -v
+        
     - name: macOS Tests
       run: |
         set -o pipefail
-        xcodebuild \
-          -scheme SwiftJQ \
-          -sdk macosx \         
-          -destination 'platform=OS X,arch=x86_64' \                               
-          clean test               
+        xcodebuild -scheme SwiftJQ -sdk macosx -destination 'platform=OS X,arch=x86_64' clean test | xcpretty -c
+        
     - name: iOS Tests
       run: |
         set -o pipefail
-        xcodebuild \
-          -scheme SwiftJQ \
-          -sdk iphonesimulator \
-          -destination 'platform=iOS Simulator,name=iPhone 12,OS=14.4' \              
-          clean test               
+        xcodebuild -scheme SwiftJQ -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 12,OS=14.4' clean test | xcpretty -c
+    
     - name: watchOS Tests
       run: |
         set -o pipefail
-        xcodebuild \
-          -scheme SwiftJQ \
-          -sdk watchsimulator \
-          -destination 'platform=watchOS Simulator,name=Apple Watch Series 5 - 40mm' \
-          clean test               
+        xcodebuild -scheme SwiftJQ -sdk watchsimulator -destination 'platform=watchOS Simulator,name=Apple Watch Series 5 - 40mm' clean test | xcpretty -c  
+    
     - name: tvOS Tests
       run: |
         set -o pipefail
-        xcodebuild \
-          -scheme SwiftJQ \
-          -sdk appletvsimulator \         
-          -destination 'platform=tvOS Simulator,name=Apple TV' \                               
-          clean test               
+        xcodebuild -scheme SwiftJQ -sdk appletvsimulator -destination 'platform=tvOS Simulator,name=Apple TV' clean test | xcpretty -c
