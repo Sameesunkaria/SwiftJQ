@@ -52,7 +52,8 @@ let countryTransform = try JQ(program: """
 let countries = try countryTransform.all(
   for: fruitsJSON, 
   formatter: countryFormatter)
-  
+
+// Output:
 // countries: [Country] == [
 //   Country(name: "China", fruits: ["apple", "banana"]),
 //   Country(name: "India", fruits: ["apple", "banana"]),
@@ -75,9 +76,9 @@ You can install the `SwiftJQ` package using Swift Package Manager.
 https://github.com/Sameesunkaria/SwiftJQ.git
 ```
 
-`SwiftJQ` is currently only supported on macOS 10.12+, iOS 10.0+, tvOS 10.0+ and watchOS 3.0+. Additionally, `SwiftJQ` imports binary dependencies in the form of XCFrameworks, requiring Xcode 12 or higher. 
+`SwiftJQ` is currently only supported on macOS 10.12+, iOS 10.0+, tvOS 10.0+ and watchOS 3.0+. Additionally, `SwiftJQ` imports binary dependencies in the form of XCFrameworks, requiring Xcode 12.5 or higher. 
 
->**NOTE:** Due to some bugs related to code signing, this package is only supported on Xcode 12.5 beta 3 or higher. You may use this package on Xcode 12.4, but it may require you to enable the `--deep` code signing flag. This README will be updated with the latest requirements when Xcode 12.5 is released.
+>**NOTE:** Due to some bugs related to code signing, this package is only supported on Xcode 12.5 or higher. You can use this package on Xcode 12.4, but it may require you to enable the `--deep` code signing flag.
 
 ## Usage
 
