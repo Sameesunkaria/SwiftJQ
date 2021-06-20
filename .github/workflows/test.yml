@@ -9,10 +9,10 @@ on:
 jobs:
   build:
     name: Run tests
-    runs-on: macos-latest
+    runs-on: macOS-11.0
     strategy:
       matrix:
-        xcode_version: ["12.4"]
+        xcode_version: ["12.5"]
       fail-fast: false
 
     steps:
@@ -41,7 +41,7 @@ jobs:
     - name: watchOS Tests
       run: |
         set -o pipefail
-        DISABLE_TESTS=true xcodebuild -scheme SwiftJQ -sdk watchsimulator -destination 'platform=watchOS Simulator,name=Apple Watch Series 5 - 40mm' clean build | xcpretty -c
+        xcodebuild -scheme SwiftJQ -sdk watchsimulator -destination 'platform=watchOS Simulator,name=Apple Watch Series 5 - 40mm' clean build | xcpretty -c
     
     - name: tvOS Tests
       run: |
